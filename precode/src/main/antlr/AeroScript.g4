@@ -26,6 +26,7 @@ PLUS    : '+';
 MINUS   : '-';
 TIMES   : '*';
 
+// Oblig2
 ASCEND  : 'ascend';
 DESCEND : 'descend';
 MOVE    : 'move';
@@ -43,14 +44,13 @@ GROUND  : 'ground';
 LEFT    : 'left';
 RIGHT   : 'right';
 
-// NEW FOR OBLIG 3: Event keywords
+// Oblig3: Event keywords
 ON       : 'on';
 OBSTACLE : 'obstacle';
 LOW      : 'low';
 BATTERY  : 'battery';
 MESSAGE  : 'message';
 
-// Define all the elements of the language for the various keywords that you need
 RANDOM  : 'random';
 POINT   : 'point';
 

@@ -81,7 +81,9 @@ public class Main {
                 AeroScriptParser.ProgramContext programContext = parser.program();
 
                 Interpreter interpreter = new Interpreter(heap, stack);
-
+                TypeChecker typeChecker = new TypeChecker();
+                typeChecker.visitProgram(programContext);
+                
                 System.out.println();
                 System.out.println("Initial position: " + initialPosition);
                 System.out.println("Initial Battery level: " + vars.get("initial battery level"));
@@ -91,10 +93,7 @@ public class Main {
                 ArrayList<Execution> executions = interpreter.visitProgram(programContext);
                 System.out.println("Successfully parsed " + executions.size() + " modes\n");
 
-                // ========== REMOVED FOR OBLIG 3 ==========
-                // In Oblig 3, execution is handled by Execution.execute() 
-                // which is called inside visitProgram() for modes with leading ->
-                // So we DON'T call interpreter.executeProgram() here anymore
+                
 
                 System.out.println("\n==== Initial Execution Complete ====\n");
 

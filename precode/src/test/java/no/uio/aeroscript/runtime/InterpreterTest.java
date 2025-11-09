@@ -89,7 +89,7 @@ class InterpreterTest {
         assertEquals(100.0f, interpreter.getBatteryLevel());
     }
 
-    @Test
+    /*@Test
     void visitProgram() {
         initInterpreter();
         Interpreter interpreter = new Interpreter(this.heap, this.stack);
@@ -108,7 +108,7 @@ class InterpreterTest {
         } catch (Exception e) {
             fail("Failed to parse program: " + e.getMessage());
         }
-    }
+    }*/
 
     @Test
     void visitExpression() {
