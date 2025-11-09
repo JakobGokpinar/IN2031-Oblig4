@@ -4,20 +4,21 @@ import no.uio.aeroscript.antlr.AeroScriptLexer;
 import no.uio.aeroscript.antlr.AeroScriptParser;
 import no.uio.aeroscript.ast.stmt.Execution;
 import no.uio.aeroscript.runtime.Interpreter;
-import no.uio.aeroscript.runtime.TypeCheck;
-//...
-import no.uio.aeroscript.runtime.REPL;
-//...
 import no.uio.aeroscript.type.Memory;
 import no.uio.aeroscript.type.Point;
 import no.uio.aeroscript.ast.stmt.Statement;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
-//...
+
+//Oblig4
+import no.uio.aeroscript.runtime.TypeCheck;
+import no.uio.aeroscript.error.TypeError;
+
+//Oblig3
+import no.uio.aeroscript.runtime.REPL;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
-//...
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -81,24 +82,27 @@ public class Main {
                 AeroScriptParser parser = new AeroScriptParser(tokens);
                 AeroScriptParser.ProgramContext programContext = parser.program();
 
-                Interpreter interpreter = new Interpreter(heap, stack);
-                TypeCheck typeChecker = new TypeCheck();
+
+                //OBLIG4: Type check
+                System.out.println("Type checking...");
+                TypeCheck typeChecker = new TypeCheck(); // Will throw TypeError if invalid
                 typeChecker.visitProgram(programContext);
+                System.out.println("Type checking passed!");
 
                 System.out.println();
                 System.out.println("Initial position: " + initialPosition);
                 System.out.println("Initial Battery level: " + vars.get("initial battery level"));
                 System.out.println("Start altitude: " + vars.get("altitude") + "\n");
 
+                Interpreter interpreter = new Interpreter(heap, stack);
+
                 System.out.println("==== Parsing and Building AST ====");
                 ArrayList<Execution> executions = interpreter.visitProgram(programContext);
                 System.out.println("Successfully parsed " + executions.size() + " modes\n");
 
-                
-
                 System.out.println("\n==== Initial Execution Complete ====\n");
 
-                // New for Oblig3: REPL Integration ==========       
+                //Oblig3: REPL Integration       
                 Execution firstExecution = interpreter.getFirstExecution();         
                 if (firstExecution == null) {
                     System.err.println("Warning: No starting mode found (no mode with leading ->)");
@@ -137,6 +141,9 @@ public class Main {
                 }
                 System.out.println("Execution complete!");
 
+            } catch (TypeError e) {
+                System.err.println("Type error: " + e.getMessage());
+                System.exit(1);
             } catch (ParseCancellationException e) {
                 System.err.println("Parser error: " + e.getMessage());
                 System.out.println();

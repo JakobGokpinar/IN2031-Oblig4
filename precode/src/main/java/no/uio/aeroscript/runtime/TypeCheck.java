@@ -4,16 +4,6 @@ import no.uio.aeroscript.antlr.AeroScriptBaseVisitor;
 import no.uio.aeroscript.antlr.AeroScriptParser;
 import no.uio.aeroscript.error.TypeError;
 
-
-/*
-Pitfalls to Avoid
-
-1. Don't evaluate expressions - just check their types!
-2. Remember parentheses - (expr) has the same type as expr
-3. Random expressions - random is Num, random[...] needs a Range
-4. Handle all operators - +, -, * each have their own rules
-*/
-
 /*
 	Returns: "Num", "Point", or "Range"
     Throws: TypeError when type checking fails
@@ -22,18 +12,37 @@ public class TypeCheck extends AeroScriptBaseVisitor<String> {
 
 
 	/*
-	- Expression checking
-	- Expressions will return Num, Point or Range, or will throw error
+		- Expression checking
+		- Expressions will return Num, Point or Range, or will throw error
 	*/
+
+	/*
+		ANTLR Grammer Expression
+		expression : NEG expression #NegExp
+	            | left = expression TIMES right = expression #TimesExp
+	            | left = expression PLUS right = expression #PlusExp
+	            | left = expression MINUS right = expression #MinusExp
+	            | NUMBER #NumExp
+	            | RANDOM range #RangeExp
+	            | POINT point #PointExp
+	            | LPAREN expression RPAREN #ParentExp
+	            
+
+		**Each label (e.g., #PlusExp) creates a visitor method that we can override:
+		- #PlusExp → visitPlusExp()
+		- #TimesExp → visitTimesExp()
+		- #NumExp → visitNumExp()
+		- etc.
+	*/
+
 	@Override
 	public String visitNegExp(AeroScriptParser.NegExpContext ctx) {
-		//--2
 		String type = visit(ctx.expression());
 
 		if (type.equals("Range")) {
 			throw new TypeError("Cannot negate a Range");
 		}
-		return type;
+		return type; /* Num -> Num, Point -> Point */
 	}
 
 	@Override
@@ -42,16 +51,39 @@ public class TypeCheck extends AeroScriptBaseVisitor<String> {
 	}
 
 	@Override
+	public String visitParentExp(AeroScriptParser.ParentExpContext ctx) {
+		return visit(ctx.expression());
+	}
+
+	@Override
 	public String visitPlusExp(AeroScriptParser.PlusExpContext ctx) {
 		String leftType = visit(ctx.left);
 		String rightType = visit(ctx.right);
-
+		/*
+		Num + Num -> Num
+		Point + Point -> Point
+		else: TypeError
+		*/
 		if (leftType.equals("Num") && rightType.equals("Num")) {
 			return "Num"; //Valid: Num + Num -> Num
 		} else if (leftType.equals("Point") && rightType.equals("Point")) {
 			return "Point"; //Valid: Point + Point -> Point
 		} else {
 			throw new TypeError("Cannot add: " + leftType + " and " + rightType);
+		}
+	}
+
+	@Override
+	public String visitMinusExp(AeroScriptParser.MinusExpContext ctx) {
+		String leftType = visit(ctx.left);
+		String rightType = visit(ctx.right);
+
+		if (leftType.equals("Num") && rightType.equals("Num")) {
+			return "Num";
+		} else if (leftType.equals("Point") && rightType.equals("Point")){
+			return "Point";
+		} else {
+			throw new TypeError("Cannot subtract " + leftType + " and " + rightType);
 		}
 	}
 
@@ -79,20 +111,43 @@ public class TypeCheck extends AeroScriptBaseVisitor<String> {
 
 	@Override
 	public String visitPointExp(AeroScriptParser.PointExpContext ctx) {
-		String xType = visit(ctx.point().left);
-		String yType = visit(ctx.point().right);
+		// point (x,y)
+		return visitPoint(ctx.point());
+	}
+
+	@Override
+	public String visitPoint(AeroScriptParser.PointContext ctx) {
+		String xType = visit(ctx.left);
+		String yType = visit(ctx.right);
 
 		if (!xType.equals("Num") || !yType.equals("Num")) {
-			throw new TypeError("Points components must be Num, got ( " + xType + ", " + yType + ")");
+			throw new TypeError("Points components must be Num, got (" + xType + ", " + yType + ")");
 		}
-
 		return "Point";
+	}
+
+	@Override
+	public String visitRangeExp(AeroScriptParser.RangeExpContext ctx) {
+		// random [start,end]
+		visitRange(ctx.range());
+		return "Num"; //random[...] → Num
+	}
+
+	@Override
+	public String visitRange(AeroScriptParser.RangeContext ctx) {
+		String startType = visit(ctx.left);
+		String endType = visit(ctx.right);
+
+		if (!startType.equals("Num") || !endType.equals("Num")) {
+			throw new TypeError("Range components must be Num, got [" + startType + ", " + endType + "]");
+		}
+		return "Range";
 	}
 
 	
 
 	
-
+	/* ======= STATEMENTS ======== */
 
 
 	/*
@@ -194,6 +249,8 @@ public class TypeCheck extends AeroScriptBaseVisitor<String> {
 	}
 
 
+
+	/* ======= PROGRAMS ======== */
 
 	/*
 	- Program and Mode checking
