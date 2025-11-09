@@ -4,6 +4,7 @@ import no.uio.aeroscript.antlr.AeroScriptLexer;
 import no.uio.aeroscript.antlr.AeroScriptParser;
 import no.uio.aeroscript.ast.stmt.Execution;
 import no.uio.aeroscript.runtime.Interpreter;
+import no.uio.aeroscript.runtime.TypeCheck;
 //...
 import no.uio.aeroscript.runtime.REPL;
 //...
@@ -81,9 +82,9 @@ public class Main {
                 AeroScriptParser.ProgramContext programContext = parser.program();
 
                 Interpreter interpreter = new Interpreter(heap, stack);
-                TypeChecker typeChecker = new TypeChecker();
+                TypeCheck typeChecker = new TypeCheck();
                 typeChecker.visitProgram(programContext);
-                
+
                 System.out.println();
                 System.out.println("Initial position: " + initialPosition);
                 System.out.println("Initial Battery level: " + vars.get("initial battery level"));

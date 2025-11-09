@@ -4,7 +4,6 @@ import no.uio.aeroscript.antlr.AeroScriptBaseVisitor;
 import no.uio.aeroscript.antlr.AeroScriptParser;
 import no.uio.aeroscript.error.TypeError;
 
-// Return a String representing the type: "Num", "Point", or "Range"
 
 /*
 Pitfalls to Avoid
@@ -14,9 +13,34 @@ Pitfalls to Avoid
 3. Random expressions - random is Num, random[...] needs a Range
 4. Handle all operators - +, -, * each have their own rules
 */
+
+/*
+	Returns: "Num", "Point", or "Range"
+    Throws: TypeError when type checking fails
+*/
 public class TypeCheck extends AeroScriptBaseVisitor<String> {
 
-	//Expression checking
+
+	/*
+	- Expression checking
+	- Expressions will return Num, Point or Range, or will throw error
+	*/
+	@Override
+	public String visitNegExp(AeroScriptParser.NegExpContext ctx) {
+		//--2
+		String type = visit(ctx.expression());
+
+		if (type.equals("Range")) {
+			throw new TypeError("Cannot negate a Range");
+		}
+		return type;
+	}
+
+	@Override
+	public String visitNumExp(AeroScriptParser.NumExpContext ctx) {
+		return "Num";
+	}
+
 	@Override
 	public String visitPlusExp(AeroScriptParser.PlusExpContext ctx) {
 		String leftType = visit(ctx.left);
@@ -31,36 +55,8 @@ public class TypeCheck extends AeroScriptBaseVisitor<String> {
 		}
 	}
 
-
 	@Override
-	public String visitNumExp(AeroScriptParser.NumExpContext ctx) {
-		return "Num"; //Numbers are always Num
-	}
-
-	@Override
-	public String visitPointExp(AeroScriptParser.PointExpContext ctx) {
-		String xType = visit(ctx.point().left);
-		String yType = visit(ctx.point().right);
-
-		if (!xType.equals("Num") || !yType.equals("Num")) {
-			throw new TypeError("Points components must be Num, got ( " + xType + ", " + yType + ")");
-		}
-
-		return "Point";
-	}
-
-	@Override
-	public String visitNegExp(AeroScriptParser.NegExpContext ctx) {
-		String type = visit(ctx.expression()); //What is type here?? What is expression return here?
-
-		if (type.equals("Range")) {
-			throw new TypeError("Cannot negate a Range");
-		}
-		return type;
-	}
-
-	@Override
-	public String visitTimesEsp(AeroScriptParser.TimesExpContext ctx) {
+	public String visitTimesExp(AeroScriptParser.TimesExpContext ctx) {
 		String leftType = visit(ctx.left); //What is left and right return here?
 		String rightType = visit(ctx.right);
 		/*
@@ -79,33 +75,138 @@ public class TypeCheck extends AeroScriptBaseVisitor<String> {
     		throw new TypeError("Unvalid arguments passed to Times expression");
     	}
 	}
+	
+
+	@Override
+	public String visitPointExp(AeroScriptParser.PointExpContext ctx) {
+		String xType = visit(ctx.point().left);
+		String yType = visit(ctx.point().right);
+
+		if (!xType.equals("Num") || !yType.equals("Num")) {
+			throw new TypeError("Points components must be Num, got ( " + xType + ", " + yType + ")");
+		}
+
+		return "Point";
+	}
+
+	
+
+	
 
 
-	//Statement checking
+
 	/*
-		1. Statements return null
+	- Statement and Action checking
+	- Statements will return null
+	- construction:
+		statement: action | reaction;
+		action: (acDock | acMove | acTurn | acAscend | acDescend)
+    			(FOR expression SECONDS | AT SPEED expression)?;
 	*/
 	@Override
-	public String visitAscendStatement(AeroScriptParser.AscendStatementContext ctx) {
-		// Statements don't return a type, but we check their sub-expressions
-		String exprType = visit(ctx.expression()); //is it 'ascend by 20'?
+	public String visitStatement(AeroScriptParser.StatementContext ctx) {
+		if (ctx.action() != null) {
+			visit(ctx.action());
+		}
+		// Reactions don't need type checking, they just refer mode names
+		return null;
+	}
 
-		if (!exprType.equals("Num")) {
-        	throw new TypeError("ascend by requires Num, got " + exprType);
+	@Override
+	public String visitAction(AeroScriptParser.ActionContext ctx) {
+		if (ctx.SECONDS() != null) {
+			String timeType = visit(ctx.expression()); //visitExpression
+			if (!timeType.equals("Num")) {
+				throw new TypeError("'for...seconds' requires Num, got " + timeType);
+			}
+		}
+
+		if (ctx.SPEED() != null) {
+			String speedType = visit(ctx.expression());
+			if (!speedType.equals("Num")) {
+				throw new TypeError("'at speed' requires Num, got " + speedType);
+			}
+		}
+
+		//check the spesific action
+		if (ctx.acAscend() != null) {
+			visit(ctx.acAscend());
+		} else if (ctx.acDescend() != null) {
+			visit(ctx.acDescend());
+		} else if (ctx.acTurn() != null) {
+			visit(ctx.acTurn());
+		} else if (ctx.acMove() != null) {
+			visit(ctx.acMove());
+		} else if (ctx.acDock() != null) {
+			visit(ctx.acDock());
+		}
+		return null;
+	}
+
+	@Override
+	public String visitAcAscend(AeroScriptParser.AcAscendContext ctx) {
+		// Statements don't return a type, but we check their sub-expressions
+		String type = visit(ctx.expression());
+
+		if (!type.equals("Num")) {
+        	throw new TypeError("ascend by requires Num, got " + type);
     	}
     	return null;
 	}
 
+	@Override
+	public String visitAcDescend(AeroScriptParser.AcDescendContext ctx) {
+		if (ctx.GROUND() != null) {
+			// "descend to ground" - no expression to check
+			return null;
+		}
+		String type = visit(ctx.expression());
+		if (!type.equals("Num")) {
+        	throw new TypeError("descend by requires Num, got " + type);
+    	}
+    	return null;
+	}
 
-	//Program and Mode checking
+	@Override
+	public String visitAcMove(AeroScriptParser.AcMoveContext ctx) {
+		//MOVE (TO POINT point | BY NUMBER);
+		if (ctx.POINT() != null) {
+			String pointType = visitPoint(ctx.point()); // visitPoint will throw error if components aren't Num
+		}
+		// else: move by NUMBER - NUMBER is already validated by lexer, so no need to check it here
+		return null;
+	}
+
+	@Override
+	public String visitAcTurn(AeroScriptParser.AcTurnContext ctx) {
+		// TURN (RIGHT | LEFT)? BY expression;
+		String type = visit(ctx.expression());
+		if (!type.equals("Num")) {
+			throw new TypeError("turn by requires Num, got " + type);
+		}
+		return null;
+	}
+
+	@Override
+	public String visitAcDock(AeroScriptParser.AcDockContext ctx) {
+		// RETURN TO BASE - nothing to check here;
+		return null;
+	}
+
+
+
 	/*
-		1. Programs and modes return null
+	- Program and Mode checking
+	- Programs and Modes(Executions) will return null
+	- Format:
+		program : (execution)+
+ 		execution : ARROW? ID LCURL statement* RCURL (ARROW ID)?
 	*/
 	@Override
 	public String visitProgram(AeroScriptParser.ProgramContext ctx) {
 		//check all modes
-		for (var modeCtx: ctx.mode()) {
-			visit(modeCtx);
+		for (var executionCtx: ctx.execution()) {
+			visit(executionCtx);
 		}
 		return null;
 	}
