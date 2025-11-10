@@ -24,7 +24,6 @@ public class DescendAction extends Statement{
 
     @Override
     public void execute() {
-        @SuppressWarnings("unchecked")
         HashMap<String, Object> vars = (HashMap<String, Object>) heap.get(Memory.VARIABLES);
         float distanceF = 0;
         float timeF = 0;
@@ -48,12 +47,13 @@ public class DescendAction extends Statement{
         float currentDistance = (float) vars.get("distance travelled");
         float batteryCost = (distanceF * 0.2f) + (timeF * 0.1f) + (speedF * 1.0f);
         
-        System.out.println("Descending by " + distanceF + " meters");
-        System.out.println("  Required battery " + batteryCost + " %");
+        System.out.println("\nDescending by " + distanceF + " meters");
+        System.out.println("    ├─ Required battery " + batteryCost + " %");
+        System.out.println("    ├─ Current battery " + currentBattery + " %");
+        System.out.println("    ├─ Current altitude " + currentAltitude);
 
         if (currentBattery < batteryCost) {
-            vars.put("battery level", 0.0f);
-            throw new RuntimeException("Battery depleted while descending!");
+            throw new LowBatteryException(currentBattery);
         }
 
         float newAltitude = Math.max(0, currentAltitude - distanceF);
@@ -61,9 +61,9 @@ public class DescendAction extends Statement{
         vars.put("battery level", currentBattery - batteryCost);
         vars.put("distance travelled", currentDistance + distanceF);
 
-        System.out.println("  New altitude: " + vars.get("altitude") + " meters");
-        System.out.println("  Battery remaining: " + String.format("%.2f", (float) vars.get("battery level")) + " %");      
-        System.out.println("  Distance travelled: " + vars.get("distance travelled") + " meters");
+        System.out.println("    ├─ New altitude: " + vars.get("altitude") + " meters");
+        System.out.println("    ├─ Remaining battery: " + String.format("%.2f", (float) vars.get("battery level")) + " %");      
+        System.out.println("    └─ Total distance travelled: " + vars.get("distance travelled") + " meters");
 
         checkLowBattery();
     }   

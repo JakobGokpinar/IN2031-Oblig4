@@ -22,7 +22,6 @@ public class AscendAction extends Statement {
 
     @Override
     public void execute() {
-        @SuppressWarnings("unchecked")
         HashMap<String, Object> vars = (HashMap<String, Object>) heap.get(Memory.VARIABLES);
         float distanceF = 0;
         float timeF = 0;
@@ -41,12 +40,15 @@ public class AscendAction extends Statement {
         float batteryCost = (distanceF * 0.6f) + (timeF * 0.1f) + (speedF * 1.0f);
         float currentDistance = (float) vars.get("distance travelled");
 
-        System.out.println("Ascending by " + distanceF + " meters");
-        System.out.println("  Required battery " + batteryCost + " %");
+        System.out.println("\nAscending by " + distanceF + " meters");
+        System.out.println("    ├─ Required battery " + batteryCost + " %");
+        System.out.println("    ├─ Current battery " + currentBattery + " %");
+        System.out.println("    ├─ Current altitude " + currentAltitude);
+
+
         
         if (currentBattery < batteryCost) {
-            vars.put("battery level", 0.0f);
-            throw new RuntimeException("Battery depleted!");
+            throw new LowBatteryException(currentBattery);
         }
 
         vars.put("altitude", currentAltitude + distanceF);
@@ -54,9 +56,9 @@ public class AscendAction extends Statement {
         vars.put("distance travelled", currentDistance + distanceF);
 
 
-        System.out.println("  New altitude: " + vars.get("altitude"));
-        System.out.println("  Battery remaining: " + vars.get("battery level") + " %");
-        System.out.println("  Distance travelled: " + vars.get("distance travelled") + " meters");
+        System.out.println("    ├─ New altitude: " + vars.get("altitude"));
+        System.out.println("    ├─ Remaining battery: " + vars.get("battery level") + " %");
+        System.out.println("    └─ Total distance travelled: " + vars.get("distance travelled") + " meters");
 
         checkLowBattery();
     }

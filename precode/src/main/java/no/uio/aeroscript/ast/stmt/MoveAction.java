@@ -24,7 +24,6 @@ public class MoveAction extends Statement{
 
     @Override
     public void execute() {
-        @SuppressWarnings("unchecked")
         HashMap<String, Object> vars = (HashMap<String, Object>) heap.get(Memory.VARIABLES);
         Point currentPoint = (Point) vars.get("current position");
         Point targetPoint;
@@ -58,21 +57,24 @@ public class MoveAction extends Statement{
         float batteryCost = (distanceF * multiplier) + (timeF * 0.1f) + (speedF * 1.0f);
         float currentBattery = (float) vars.get("battery level");
         float currentDTravelled = (float) vars.get("distance travelled");
-        System.out.println("Moving to " + targetPoint);
-        System.out.println("  Distance: " + distanceF + " meters");
-        System.out.println("  Required battery " + batteryCost + " %");
+        float currentAltitude = (float) vars.get("altitude");
+
+        System.out.println("\nMoving to " + targetPoint);
+        System.out.println("    ├─ Distance: " + distanceF + " meters");
+        System.out.println("    ├─ Required battery " + batteryCost + " %");
+        System.out.println("    ├─ Current battery " + currentBattery + " %");
+        System.out.println("    ├─ Altitude " + currentAltitude);
 
         if (currentBattery < batteryCost) {
-            vars.put("battery level", 0.0f);
-            throw new RuntimeException("Battery depleted! Cannot move.");
+            throw new LowBatteryException(currentBattery);
         }
 
         vars.put("current position", targetPoint);
         vars.put("distance travelled", currentDTravelled + distanceF);
         vars.put("battery level", currentBattery - batteryCost);
 
-        System.out.println("  Total distance: " + vars.get("distance travelled") + " meters");
-        System.out.println("  Battery remaining: " + vars.get("battery level") + " %");
+        System.out.println("    ├─ Remaining battery: " + vars.get("battery level") + " %");
+        System.out.println("    └─ Total distance travelled: " + vars.get("distance travelled") + " meters");
 
         checkLowBattery();
     }

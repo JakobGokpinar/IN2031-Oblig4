@@ -159,15 +159,10 @@ public class Main {
             Point finalPos = interpreter.getPosition();
             float finalBattery = interpreter.getBatteryLevel();
             float finalDistance = interpreter.getDistanceTravelled();
-
-            System.out.println("  Initial Position:  Point: (" + 
-            OutputFormatter.formatFloat(initialPosition.getX()) + ", " + 
-            OutputFormatter.formatFloat(initialPosition.getY()) + ")");
             System.out.println("  Final Position:    Point: (" + 
             OutputFormatter.formatFloat(finalPos.getX()) + ", " + 
             OutputFormatter.formatFloat(finalPos.getY()) + ")");
             System.out.println("  Distance Traveled: " + OutputFormatter.formatFloat(finalDistance) + " meters");
-            System.out.println("  Initial Battery:   " + OutputFormatter.formatPercent(batteryLevel));
             System.out.println("  Final Battery:     " + OutputFormatter.formatPercent(finalBattery));
             System.out.println("\n" + "=".repeat(60) + "\n");
         }

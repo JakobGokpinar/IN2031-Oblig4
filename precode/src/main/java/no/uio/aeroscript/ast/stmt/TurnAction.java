@@ -23,7 +23,6 @@ public class TurnAction extends Statement{
 
     @Override
     public void execute() {
-        @SuppressWarnings("unchecked")
         HashMap<String, Object> vars = (HashMap<String, Object>) heap.get(Memory.VARIABLES);
 
         float angleValue = (float) angle.evaluate();
@@ -39,17 +38,20 @@ public class TurnAction extends Statement{
 
         float batteryCost = (angleValue * 0.3f) + (durationF * 0.1f) + (speedF * 1.0f);
         float currentBattery = (float) vars.get("battery level");
-        System.out.println("Turning " + direction + " by " + angleValue + " degrees");
-        System.out.println("  Required battery " + batteryCost + " %");
+        float currentAltitude = (float) vars.get("altitude");
+
+        System.out.println("\nTurning " + direction + " by " + angleValue + " degrees");
+        System.out.println("     ├─ Required battery " + batteryCost + " %");
+        System.out.println("     ├─ Current battery " + currentBattery + " %");
+        System.out.println("     ├─ Current altitude " + currentAltitude);
 
         if (currentBattery - batteryCost < 0) {
-            vars.put("battery level", 0.0f);
-            throw new RuntimeException("Battery depleted!");
+            throw new LowBatteryException(currentBattery);
         }
         vars.put("battery level", currentBattery - batteryCost);
 
         
-        System.out.println("  Battery remaining: " + vars.get("battery level") + " %");
+        System.out.println("     └─ Remaining battery: " + vars.get("battery level") + " %");
 
         checkLowBattery();
     }

@@ -11,6 +11,24 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
+/*
+ * Read-Eval-Print Loop (REPL) for interactive AeroScript program execution.
+ * 
+ * Provides a command-line interface for users to:
+ * - Trigger message events (message <name>)
+ * - View system state and statistics (info)
+ * - Display available commands (help)
+ * - Exit the program gracefully (exit)
+ * 
+ * The REPL allows users to manually trigger events defined in the AeroScript program,
+ * such as starting missions or invoking specific execution modes. It maintains references
+ * to the heap, listeners, and the initial execution mode.
+ * 
+ * Commands are executed and timed, with results displayed back to the user. The REPL
+ * continues running until explicitly terminated via the 'exit' command or when an
+ * emergency landing completes.
+ */
+
 class Command {
     private final String name;
     private final REPL repl;
@@ -79,12 +97,23 @@ public class REPL {
         boolean result;
 
         if (str.equals("help")) {
+            System.out.println("\n" + "=".repeat(60));
+            System.out.println("  AVAILABLE COMMANDS");
+            System.out.println("=".repeat(60));
+            
             for (Command cmd : commands.values()) {
-                System.out.printf("%11s - %s%n\n", cmd.getName(), cmd.getHelp());
-                if (!Objects.equals(cmd.getParameterHelp(), "")) {
-                    System.out.printf("%14s\n", cmd.getParameterHelp());
+                if (!cmd.getName().equals("help")) {  // Show help last
+                    System.out.println("\n  " + cmd.getName());
+                    System.out.println("    " + cmd.getHelp());
+                    if (!cmd.getParameterHelp().isEmpty()) {
+                        System.out.println("    Usage: " + cmd.getName() + " " + cmd.getParameterHelp());
+                    }
                 }
             }
+            
+            System.out.println("\n  help");
+            System.out.println("    Display this help message");
+            System.out.println("\n" + "=".repeat(60) + "\n");
             result = false;
         } else {
             Command cmd = commands.get(str);
@@ -114,8 +143,6 @@ public class REPL {
     }
 
     private void initCommands() {
-        commands.put("help", new Command("help", this, (param) -> false, commands.keySet().toString(), false, ""));
-
         // for command "message" we get the message passed as parameter, we need to add the trigger for the listener
         commands.put("message", new Command("message", this, (param) -> {
             Runnable listener = listeners.get(param);
@@ -125,45 +152,58 @@ public class REPL {
                 printRepl("No listener for message: " + param);
             }
             return true;
-        }, "Send a message to the listener", true, "The message to send"));
-
+        }, "Trigger a message event", true, "<message_name>"));
+        
         commands.put("info", new Command("info", this, (param) -> {
             HashMap<String, Object> vars = (HashMap<String, Object>) heap.get(Memory.VARIABLES);
             Map<String, String> messages = (Map<String, String>) heap.get(Memory.MESSAGES);
             Map<String, String> reactions = (Map<String, String>) heap.get(Memory.REACTIONS);
             Map<String, Execution> executions = (Map<String, Execution>) heap.get(Memory.EXECUTIONS);
             
-            printRepl("=== System State ===");
-            printRepl("\nVariables:");
-            printRepl("  Position: " + vars.get("current position"));
-            printRepl("  Altitude: " + vars.get("altitude") + " meters");
-            printRepl("  Battery: " + String.format("%.2f", vars.get("battery level")) + "%");
-            printRepl("  Distance: " + String.format("%.2f", vars.get("distance travelled")) + " meters");
+            System.out.println("\n" + "=".repeat(60));
+            System.out.println("  SYSTEM STATE");
+            System.out.println("=".repeat(60));
             
-            printRepl("\nRegistered Messages:");
-            if (messages.isEmpty()) {
-                printRepl("  None");
+            System.out.println("\n📍 Current Status:");
+            System.out.println("  Position:  " + vars.get("current position"));
+            System.out.println("  Altitude:  " + String.format("%.2f", vars.get("altitude")) + " meters");
+            System.out.println("  Battery:   " + String.format("%.2f", vars.get("battery level")) + "%");
+            System.out.println("  Distance:  " + String.format("%.2f", vars.get("distance travelled")) + " meters");
+            
+            System.out.println("\n📨 Registered Messages:");
+            if (messages == null || messages.isEmpty()) {
+                System.out.println("  (none)");
             } else {
-                messages.forEach((msg, mode) -> printRepl("  " + msg + " -> " + mode));
+                messages.forEach((msg, mode) -> 
+                    System.out.println("  " + msg + " → " + mode));
             }
             
-            printRepl("\nRegistered Reactions:");
-            if (reactions.isEmpty()) {
-                printRepl("  None");
+            System.out.println("\n⚡ Registered Reactions:");
+            if (reactions == null || reactions.isEmpty()) {
+                System.out.println("  (none)");
             } else {
-                reactions.forEach((event, mode) -> printRepl("  " + event + " -> " + mode));
+                reactions.forEach((event, mode) -> 
+                    System.out.println("  " + event + " → " + mode));
             }
             
-            printRepl("\nAvailable Modes:");
-            executions.keySet().forEach(name -> printRepl("  " + name));
+            System.out.println("\n🎯 Available Modes:");
+            if (executions != null) {
+                executions.keySet().forEach(name -> 
+                    System.out.println("  • " + name));
+            }
+            
+            System.out.println("\n" + "=".repeat(60) + "\n");
             
             return true;
-        }, "Prints the information on the heap", false, ""));
+        }, "Display system state and statistics", false, ""));
 
         commands.put("exit", new Command("exit", this, (param) -> {
             terminate();
             return true;
-        }, "Exits the REPL", false, ""));
+        }, "Exit the REPL and terminate program", false, ""));
+
+        commands.put("help", new Command("help", this, (param) -> false, "Display this help message", false, ""));
+
     }
 
     public void terminate() {

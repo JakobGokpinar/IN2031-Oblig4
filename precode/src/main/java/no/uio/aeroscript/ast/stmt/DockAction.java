@@ -19,7 +19,6 @@ public class DockAction extends Statement{
         this.speed = speed;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public void execute() {
         HashMap<String, Object> vars = (HashMap<String, Object>) heap.get(Memory.VARIABLES);
@@ -41,12 +40,12 @@ public class DockAction extends Statement{
         Point initialPosition = (Point) vars.get("initial position");
 
         float batteryCost = altitude + (timeF * 0.1f) + (speedF * 1.0f); 
-        System.out.println("Returning to base");
-        System.out.println("  Required battery " + batteryCost + " %");
+        System.out.println("\nReturning to base");
+        System.out.println("    ├─ Required battery " + batteryCost + " %");
+        System.out.println("    ├─ Current battery " + currentBattery + " %");
 
         if (currentBattery - batteryCost < 0) {
-            vars.put("battery level", 0.0f);
-            throw new RuntimeException("Battery depleted before returning to base!");
+            throw new LowBatteryException(currentBattery);
         }
 
         // Calculate distance back to base
@@ -54,42 +53,14 @@ public class DockAction extends Statement{
         float dy = initialPosition.getY() - currentPosition.getY();
         distanceToBase = (float) Math.sqrt(dx * dx + dy * dy);
 
-        System.out.println("  Descending from altitude " + altitude + " to ground");
-        System.out.println("  Moving from " + currentPosition + " to base at " + initialPosition);
+        System.out.println("    ├─ Descending from altitude " + altitude + " to ground");
+        System.out.println("    └─ Moving from " + currentPosition + " to base at " + initialPosition);
 
         vars.put("current position", initialPosition);
         vars.put("altitude", 0.0f);
         vars.put("battery level", currentBattery - batteryCost);
         vars.put("distance travelled", distanceTravelled + altitude + distanceToBase);
 
-
-        // Printing final statistics
-        System.out.println();
-        System.out.println("=== MISSION COMPLETED ===");
-        System.out.println("Total distance travelled: " + vars.get("distance travelled") + " meters");
-        System.out.println("Final battery level: " + vars.get("battery level") + " %");
-        System.out.println("========================");   
-        
-        checkLowBattery();
     }
 
-    private void checkLowBattery() {
-        HashMap<String, Object> vars = (HashMap<String, Object>) heap.get(Memory.VARIABLES);
-        float batteryLevel = (float) vars.get("battery level");
-        
-        if (batteryLevel < 20.0f && batteryLevel > 0) {            
-            Map<String, String> reactions = (Map<String, String>) heap.get(Memory.REACTIONS);         
-            if (reactions != null && reactions.containsKey("low battery")) {
-                // Check if we're already in emergency by seeing if battery was already low
-                Boolean emergencyTriggered = (Boolean) vars.get("emergency_triggered");
-                if (emergencyTriggered == null || !emergencyTriggered) {
-                    vars.put("emergency_triggered", true);  // Mark as triggered
-                    throw new LowBatteryException(batteryLevel);
-                }
-            }
-        }     
-        if (batteryLevel <= 0) {
-            throw new LowBatteryException(0.0f);
-        }
-    }
 }

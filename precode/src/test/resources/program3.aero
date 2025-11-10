@@ -1,0 +1,24 @@
+-> RandomTour {
+    on message [start] -> TakeOff
+}
+
+TakeOff {
+    ascend by 20
+    on low battery -> Emergency
+} -> Explore
+
+Explore {
+    move to point (random[0, 50], random[0, 50])
+} -> Investigate
+
+Investigate {
+    move by 50
+} -> GoHome
+
+GoHome {
+    return to base
+}
+
+Emergency {
+    descend to ground
+}
