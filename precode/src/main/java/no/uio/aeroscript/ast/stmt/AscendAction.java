@@ -66,11 +66,8 @@ public class AscendAction extends Statement {
         HashMap<String, Object> vars = (HashMap<String, Object>) heap.get(Memory.VARIABLES);
         float batteryLevel = (float) vars.get("battery level");
         
-        if (batteryLevel < 20.0f && batteryLevel > 0) {
-            System.out.println("WARNING: Battery level critically low (" + String.format("%.2f", batteryLevel) + "%)!");
-            
+        if (batteryLevel < 20.0f && batteryLevel > 0) {            
             Map<String, String> reactions = (Map<String, String>) heap.get(Memory.REACTIONS);         
-            // Only throw if reaction exists AND not already triggered
             if (reactions != null && reactions.containsKey("low battery")) {
                 // Check if we're already in emergency by seeing if battery was already low
                 Boolean emergencyTriggered = (Boolean) vars.get("emergency_triggered");
@@ -81,8 +78,7 @@ public class AscendAction extends Statement {
             }
         }     
         if (batteryLevel <= 0) {
-            System.err.println("Battery depleted!");
-            System.exit(1);
+            throw new LowBatteryException(0.0f);
         }
     }
 }

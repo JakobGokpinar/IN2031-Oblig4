@@ -2,6 +2,7 @@ package no.uio.aeroscript.runtime;
 
 import no.uio.aeroscript.ast.stmt.Execution;
 import no.uio.aeroscript.type.Memory;
+import no.uio.aeroscript.error.LowBatteryException;
 
 import java.time.Duration;
 import java.time.LocalTime;

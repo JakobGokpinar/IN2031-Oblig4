@@ -139,33 +139,39 @@ public class Execution extends Statement {
             System.exit(1);
         }
 
-        try {
-            // Execute statements
-            Iterator<Statement> iterator = stack.iterator();
-            while (iterator.hasNext()) {
-                Statement statement = iterator.next();
-                if (statement instanceof Execution execStatement) {
-                    if (!execStatement.toExec) {
-                        iterator.remove();
-                        continue;
-                    }
-                    if (!execStatement.getDeclare().isEmpty()) {
-                        for (String variable : execStatement.getDeclare()) {
-                            this.stack.addAll(execStatement.getNestedExecutions().get(variable).getStatements());
-                        }
+        // Execute statements
+        Iterator<Statement> iterator = stack.iterator();
+        while (iterator.hasNext()) {
+            Statement statement = iterator.next();
+            
+            if (statement instanceof Execution execStatement) {
+                if (!execStatement.toExec) {
+                    iterator.remove();
+                    continue;
+                }
+                if (!execStatement.getDeclare().isEmpty()) {
+                    for (String variable : execStatement.getDeclare()) {
+                        this.stack.addAll(execStatement.getNestedExecutions().get(variable).getStatements());
                     }
                 }
-                  
+            }
+            
+            // Try to execute statement, catch battery exceptions
+            try {
                 statement.setHeap(heap);
                 statement.execute();
-                iterator.remove();     
-            }
-        } catch (LowBatteryException e) {
-                System.out.println("\nBattery depleted during action!");
-                System.out.println("Triggering emergency procedure");
                 iterator.remove();
+            } catch (LowBatteryException e) {
+                System.out.println("\n⚠️  Battery depleted during action!");
+                System.out.println("Current battery: " + e.getBatteryLevel() + "%");
+                System.out.println("Triggering emergency procedures...");
+                iterator.remove();  // Remove the failed statement
+                
+                // Clear remaining statements and trigger low battery reaction
+                stack.clear();
                 receiveMessage("low battery");
-                break;
+                return;  // Exit execute method
+            }
         }
         
         // Handle transitions (-> NextMode)
