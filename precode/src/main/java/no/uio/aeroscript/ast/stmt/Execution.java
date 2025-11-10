@@ -165,7 +165,7 @@ public class Execution extends Statement {
                 statement.execute();
                 iterator.remove();
             } catch (LowBatteryException e) {
-                System.out.println("🔋 Low battery: " + e.getMessage());
+                System.out.println("Low battery exception: " + e.getMessage());
                 iterator.remove();
                 receiveMessage("low battery");
                 break;

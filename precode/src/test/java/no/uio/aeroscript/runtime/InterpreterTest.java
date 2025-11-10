@@ -18,7 +18,9 @@ import java.util.Stack;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+
 class InterpreterTest {
+
     private HashMap<Memory, Object> heap;
     private Stack<Statement> stack;
 
@@ -51,6 +53,24 @@ class InterpreterTest {
         AeroScriptParser parser = new AeroScriptParser(tokens);
         return parser.expression();
     }
+
+
+
+    // ============ OBLIG 1 & 2: Expression Evaluation ============
+
+    @Test
+    void visitExpression() {
+        initInterpreter();
+        Interpreter interpreter = new Interpreter(this.heap, this.stack);
+
+        assertEquals(5.0f, Float.parseFloat(interpreter.visitExpression(parseExpression("2 + 3")).evaluate().toString()));
+        assertEquals(-1.0f, Float.parseFloat(interpreter.visitExpression(parseExpression("2 - 3")).evaluate().toString()));
+        assertEquals(6.0f, Float.parseFloat(interpreter.visitExpression(parseExpression("2 * 3")).evaluate().toString()));
+        assertEquals(-1, Float.parseFloat(interpreter.visitExpression(parseExpression("-- 1")).evaluate().toString()));
+    }
+
+
+    // ============ OBLIG 2: Modes and Actions ============
 
     @Test
     void getFirstExecution() {
@@ -89,6 +109,31 @@ class InterpreterTest {
         assertEquals(100.0f, interpreter.getBatteryLevel());
     }
 
+    @Test
+    void testModeTransitions() {
+        initInterpreter();
+        Interpreter interpreter = new Interpreter(this.heap, this.stack);
+        
+        String program = """
+            -> First {
+                ascend by 10
+            } -> Second
+            Second {
+                descend by 5
+            }
+            """;
+        
+        AeroScriptParser.ProgramContext ctx = parseProgram(program);
+        interpreter.visitProgram(ctx);
+        
+        Execution firstExec = interpreter.getFirstExecution();
+        assertEquals("First", firstExec.getName());
+        assertEquals("Second", firstExec.getChild());
+    }
+
+
+    // ============ OBLIG 3: Full Program Execution ============
+    
     /*@Test
     void visitProgram() {
         initInterpreter();
@@ -110,14 +155,5 @@ class InterpreterTest {
         }
     }*/
 
-    @Test
-    void visitExpression() {
-        initInterpreter();
-        Interpreter interpreter = new Interpreter(this.heap, this.stack);
-
-        assertEquals(5.0f, Float.parseFloat(interpreter.visitExpression(parseExpression("2 + 3")).evaluate().toString()));
-        assertEquals(-1.0f, Float.parseFloat(interpreter.visitExpression(parseExpression("2 - 3")).evaluate().toString()));
-        assertEquals(6.0f, Float.parseFloat(interpreter.visitExpression(parseExpression("2 * 3")).evaluate().toString()));
-        assertEquals(-1, Float.parseFloat(interpreter.visitExpression(parseExpression("-- 1")).evaluate().toString()));
-    }
+    
 }
