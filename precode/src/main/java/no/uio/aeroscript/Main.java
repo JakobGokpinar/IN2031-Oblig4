@@ -14,6 +14,7 @@ import org.antlr.v4.runtime.misc.ParseCancellationException;
 //Oblig4
 import no.uio.aeroscript.runtime.TypeCheck;
 import no.uio.aeroscript.error.TypeError;
+import no.uio.aeroscript.util.OutputFormatter;
 
 //Oblig3
 import no.uio.aeroscript.runtime.REPL;
@@ -27,10 +28,14 @@ import java.util.HashMap;
 import java.util.Stack;
 
 public class Main {
+
     public static void main(String[] args) {
+
         System.setProperty("org.jline.terminal.dumb", "true");
         HashMap<Memory, Object> heap = new HashMap<>();
         Stack<Statement> stack = new Stack<>();
+        Interpreter interpreter = null;
+
         float batteryLevel;
         Point initialPosition;
 
@@ -38,9 +43,10 @@ public class Main {
             System.err.println("Usage: java -jar aeroscript.jar <path to file> [-b <battery level>] [-p <x> <y>]");
             System.exit(1);
         }
+
         String path = args[0];
-        // check if the user used the option -b to set the battery level
-        if (args.length > 1 && args[1].equals("-b")) {
+        
+        if (args.length > 1 && args[1].equals("-b")) { //check if option -b is set
             batteryLevel = Float.parseFloat(args[2]);
         } else if (args.length > 3 && args[4].equals("-b")) {
             batteryLevel = Float.parseFloat(args[5]);
@@ -48,8 +54,7 @@ public class Main {
             batteryLevel = 100.0f;
         }
 
-        // check if the user used the option -p to set the initial position
-        if (args.length > 1 && args[1].equals("-p")) {
+        if (args.length > 1 && args[1].equals("-p")) { //check if option -p is set
             initialPosition = new Point(Float.parseFloat(args[2]), Float.parseFloat(args[3]));
         } else if (args.length > 3 && args[3].equals("-p")) {
             initialPosition = new Point(Float.parseFloat(args[4]), Float.parseFloat(args[5]));
@@ -73,34 +78,31 @@ public class Main {
         vars.put("altitude", 0.0f);
 
         heap.put(Memory.VARIABLES, vars);
+
+        OutputFormatter.printSectionHeader("AEROSCRIPT INTERPRETER");
+        System.out.println("Initial position: Point: (" + initialPosition.getX() + ", " + initialPosition.getY() + ")");
+        System.out.println("Initial battery level: " + batteryLevel + "%");
+        System.out.println("Start altitude: 0.0");
+
         try {
             String content = new String(Files.readAllBytes(Paths.get(path)));
             try {
-                // Read all bytes of the file for parsing using the interpreter.
                 AeroScriptLexer lexer = new AeroScriptLexer(CharStreams.fromString(content));
                 CommonTokenStream tokens = new CommonTokenStream(lexer);
                 AeroScriptParser parser = new AeroScriptParser(tokens);
                 AeroScriptParser.ProgramContext programContext = parser.program();
 
-
                 //OBLIG4: Type check
-                System.out.println("Type checking...");
+                System.out.println("\nType checking...");
                 TypeCheck typeChecker = new TypeCheck(); // Will throw TypeError if invalid
                 typeChecker.visitProgram(programContext);
                 System.out.println("Type checking passed!");
 
-                System.out.println();
-                System.out.println("Initial position: " + initialPosition);
-                System.out.println("Initial Battery level: " + vars.get("initial battery level"));
-                System.out.println("Start altitude: " + vars.get("altitude") + "\n");
+                interpreter = new Interpreter(heap, stack);
 
-                Interpreter interpreter = new Interpreter(heap, stack);
-
-                System.out.println("==== Parsing and Building AST ====");
+                OutputFormatter.printSectionHeader("Parsing and Building AST");
                 ArrayList<Execution> executions = interpreter.visitProgram(programContext);
                 System.out.println("Successfully parsed " + executions.size() + " modes\n");
-
-                System.out.println("\n==== Initial Execution Complete ====\n");
 
                 //Oblig3: REPL Integration       
                 Execution firstExecution = interpreter.getFirstExecution();         
@@ -120,7 +122,7 @@ public class Main {
                         System.setProperty("org.jline.terminal", "jline.UnsupportedTerminal");
                         LineReader reader = LineReaderBuilder.builder().build();
                         String next = reader.readLine("MO> ");
-                        if (next == null) {  // ADD THIS CHECK
+                        if (next == null) {  
                             break;           // Exit if no input (EOF/Ctrl+D)
                         }
                         
@@ -138,8 +140,7 @@ public class Main {
                         break;
                     }
                     
-                }
-                System.out.println("Execution complete!");
+                }             
 
             } catch (TypeError e) {
                 System.err.println("Type error: " + e.getMessage());
@@ -153,14 +154,22 @@ public class Main {
             System.err.println("\nWe got error, terminating execution: " + e.getMessage());
             e.printStackTrace();
         } finally {
-            System.out.println("\n=== Final Results ===\n");
-            System.out.println("Initial position: " + vars.get("initial position"));
-            System.out.println("Initial battery: " + vars.get("initial battery level") + "%");
-            System.out.println("Final position: " + vars.get("current position"));
-            System.out.println("Final battery: " + vars.get("battery level") + "%");
-            System.out.println("Final altitude: " + vars.get("altitude") + " meters");
-            System.out.println("Distance travelled: " + vars.get("distance travelled") + " meters");
-            System.out.println("\nExecution complete!");
+            OutputFormatter.printSectionHeader("MISSION COMPLETE");
+            System.out.println("\n Final Statistics:");
+            Point finalPos = interpreter.getPosition();
+            float finalBattery = interpreter.getBatteryLevel();
+            float finalDistance = interpreter.getDistanceTravelled();
+
+            System.out.println("  Initial Position:  Point: (" + 
+            OutputFormatter.formatFloat(initialPosition.getX()) + ", " + 
+            OutputFormatter.formatFloat(initialPosition.getY()) + ")");
+            System.out.println("  Final Position:    Point: (" + 
+            OutputFormatter.formatFloat(finalPos.getX()) + ", " + 
+            OutputFormatter.formatFloat(finalPos.getY()) + ")");
+            System.out.println("  Distance Traveled: " + OutputFormatter.formatFloat(finalDistance) + " meters");
+            System.out.println("  Initial Battery:   " + OutputFormatter.formatPercent(batteryLevel));
+            System.out.println("  Final Battery:     " + OutputFormatter.formatPercent(finalBattery));
+            System.out.println("\n" + "=".repeat(60) + "\n");
         }
     }
 }

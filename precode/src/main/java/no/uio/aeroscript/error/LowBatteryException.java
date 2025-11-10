@@ -1,4 +1,4 @@
-package main.java.no.uio.aeroscript.ast.stmt;
+package no.uio.aeroscript.error;
 
 /*
  * Exception thrown when battery level drops below 20%

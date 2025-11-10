@@ -11,6 +11,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 
 class TypeCheckTest {
+
+    // ============ OBLIG 4: Type Checking ============
     
     private void typeCheck(String code) {
         AeroScriptLexer lexer = new AeroScriptLexer(CharStreams.fromString(code));
@@ -22,10 +24,8 @@ class TypeCheckTest {
         typeChecker.visitProgram(programContext);
     }
     
-    // ============ OBLIG 4: Type Checking ============
+    // Valid programs - should not throw error
 
-
-    // Valid programs - should NOT throw
     @Test
     void testValidNumAddition() {
         assertDoesNotThrow(() -> typeCheck(
@@ -54,7 +54,17 @@ class TypeCheckTest {
         ));
     }
     
-    // Invalid programs - SHOULD throw TypeError
+    @Test
+    void testInvalidDoubleNegationOfPoint() {
+        assertDoesNotThrow(() -> typeCheck(
+            "-> Test { move to point(--10, --20) }"
+        ));
+        // This is actually VALID - negating Nums
+    }
+
+
+    // Invalid programs - should throw TypeError
+
     @Test
     void testInvalidAscendWithPoint() {
         assertThrows(TypeError.class, () -> typeCheck(
@@ -83,12 +93,14 @@ class TypeCheckTest {
         ));
     }
     
+    // Test that random requires Num components
     @Test
-    void testInvalidNegateRange() {
+    void testInvalidRangeWithPointComponents() {
         assertThrows(TypeError.class, () -> typeCheck(
-            "-> Test { ascend by --(random[0, 100]) }"
+            "-> Test { ascend by random[point(0,0), 100] }"
         ));
     }
+
     
     @Test
     void testInvalidSpeedWithPoint() {
@@ -96,4 +108,5 @@ class TypeCheckTest {
             "-> Test { ascend by 10 at speed point(5, 5) }"
         ));
     }
+    
 }

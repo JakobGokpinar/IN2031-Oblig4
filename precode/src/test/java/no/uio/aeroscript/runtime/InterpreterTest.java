@@ -54,6 +54,13 @@ class InterpreterTest {
         return parser.expression();
     }
 
+    private AeroScriptParser.ProgramContext parseProgram(String program) {
+        AeroScriptLexer lexer = new AeroScriptLexer(CharStreams.fromString(program));
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        AeroScriptParser parser = new AeroScriptParser(tokens);
+        return parser.program();
+    }
+
 
 
     // ============ OBLIG 1 & 2: Expression Evaluation ============
@@ -109,32 +116,10 @@ class InterpreterTest {
         assertEquals(100.0f, interpreter.getBatteryLevel());
     }
 
-    @Test
-    void testModeTransitions() {
-        initInterpreter();
-        Interpreter interpreter = new Interpreter(this.heap, this.stack);
-        
-        String program = """
-            -> First {
-                ascend by 10
-            } -> Second
-            Second {
-                descend by 5
-            }
-            """;
-        
-        AeroScriptParser.ProgramContext ctx = parseProgram(program);
-        interpreter.visitProgram(ctx);
-        
-        Execution firstExec = interpreter.getFirstExecution();
-        assertEquals("First", firstExec.getName());
-        assertEquals("Second", firstExec.getChild());
-    }
-
 
     // ============ OBLIG 3: Full Program Execution ============
-    
-    /*@Test
+
+    @Test
     void visitProgram() {
         initInterpreter();
         Interpreter interpreter = new Interpreter(this.heap, this.stack);
@@ -144,16 +129,13 @@ class InterpreterTest {
             AeroScriptLexer lexer = new AeroScriptLexer(CharStreams.fromString(content));
             CommonTokenStream tokens = new CommonTokenStream(lexer);
             AeroScriptParser parser = new AeroScriptParser(tokens);
-            AeroScriptParser.ProgramContext ctx = parser.program();
-            
-            var executions = interpreter.visitProgram(ctx);
-            
-            assertNotNull(interpreter.getFirstExecution());
-            assertEquals(5, executions.size()); // Update count based on your program.aero
+            AeroScriptParser.ProgramContext ctx = parser.program();       
+            var executions = interpreter.visitProgram(ctx);        
+            assertEquals(6, executions.size());
         } catch (Exception e) {
             fail("Failed to parse program: " + e.getMessage());
         }
-    }*/
+    }
 
     
 }

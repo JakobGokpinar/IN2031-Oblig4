@@ -4,7 +4,7 @@ import no.uio.aeroscript.type.Memory;
 
 import java.util.*;
 
-import main.java.no.uio.aeroscript.ast.stmt.LowBatteryException;
+import no.uio.aeroscript.error.LowBatteryException;
 
 public class Execution extends Statement {
     private final String name;
@@ -40,32 +40,27 @@ public class Execution extends Statement {
     public String getName() {
         return name;
     }
-
     public List<Statement> getStatements() {
         return statements;
     }
-
     public Map<String, Execution> getNestedExecutions() {
         return nestedExecutions;
     }
-
     public void addListener(String message, Runnable listener) {
         listeners.put(message, listener);
     }
-
     public List<String> getDeclare() {
         return declare;
     }
-
     public void addDeclare(String variable) {
         declare.add(variable);
     }
-
     public boolean getExec() {
         return toExec;
     }
 
     public void receiveMessage(String message) {
+
         if (!messageReceivingEnabled) {
             return;
         }
@@ -144,32 +139,33 @@ public class Execution extends Statement {
             System.exit(1);
         }
 
-        // Execute statements
-        Iterator<Statement> iterator = stack.iterator();
-        while (iterator.hasNext()) {
-            Statement statement = iterator.next();
-            if (statement instanceof Execution execStatement) {
-                if (!execStatement.toExec) {
-                    iterator.remove();
-                    continue;
-                }
-                if (!execStatement.getDeclare().isEmpty()) {
-                    for (String variable : execStatement.getDeclare()) {
-                        this.stack.addAll(execStatement.getNestedExecutions().get(variable).getStatements());
+        try {
+            // Execute statements
+            Iterator<Statement> iterator = stack.iterator();
+            while (iterator.hasNext()) {
+                Statement statement = iterator.next();
+                if (statement instanceof Execution execStatement) {
+                    if (!execStatement.toExec) {
+                        iterator.remove();
+                        continue;
+                    }
+                    if (!execStatement.getDeclare().isEmpty()) {
+                        for (String variable : execStatement.getDeclare()) {
+                            this.stack.addAll(execStatement.getNestedExecutions().get(variable).getStatements());
+                        }
                     }
                 }
-            }
-            
-            try {
+                  
                 statement.setHeap(heap);
                 statement.execute();
-                iterator.remove();
-            } catch (LowBatteryException e) {
-                System.out.println("Low battery exception: " + e.getMessage());
+                iterator.remove();     
+            }
+        } catch (LowBatteryException e) {
+                System.out.println("\nBattery depleted during action!");
+                System.out.println("Triggering emergency procedure");
                 iterator.remove();
                 receiveMessage("low battery");
                 break;
-            }
         }
         
         // Handle transitions (-> NextMode)

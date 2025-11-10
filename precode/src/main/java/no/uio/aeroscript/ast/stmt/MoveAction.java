@@ -4,7 +4,7 @@ import no.uio.aeroscript.ast.expr.Expression;
 import java.util.HashMap;
 import java.util.Map;
 
-import main.java.no.uio.aeroscript.ast.stmt.LowBatteryException;
+import no.uio.aeroscript.error.LowBatteryException;
 import no.uio.aeroscript.type.Memory;
 import no.uio.aeroscript.type.Point;
 

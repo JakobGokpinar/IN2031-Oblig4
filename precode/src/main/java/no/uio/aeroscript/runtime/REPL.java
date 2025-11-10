@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
-// Uncomment the following code for the REPL after implementing the execution and the rest of the code
 class Command {
     private final String name;
     private final REPL repl;
@@ -31,19 +30,15 @@ class Command {
     public String getName() {
         return name;
     }
-
     public String getHelp() {
         return help;
     }
-
     public boolean isRequiresParameter() {
         return requiresParameter;
     }
-
     public String getParameterHelp() {
         return parameterHelp;
     }
-
     public boolean execute(String param) {
         if (requiresParameter && Objects.equals(param, "")) {
             System.out.println(name + " requires a parameter: " + parameterHelp);
@@ -54,7 +49,9 @@ class Command {
     }
 }
 
+
 public class REPL {
+
     private final HashMap<Memory, Object> heap;
     private final HashMap<String, Command> commands = new HashMap<>();
     private final Map<String, Runnable> listeners;
@@ -98,8 +95,12 @@ public class REPL {
                 try {
                     cmd.execute(param);
                     result = true;
+                } catch (LowBatteryException e) {
+                    printRepl("Battery depleted: " + e.getMessage());
+                    result = false;
                 } catch (Exception e) {
-                    printRepl("Command " + str + " " + param + " caused an exception. Internal state may be inconsistent");
+                    printRepl("Error: " + e.getMessage());
+                    e.printStackTrace();
                     result = false;
                 }
             }
